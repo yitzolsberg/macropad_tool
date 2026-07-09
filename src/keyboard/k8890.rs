@@ -4,7 +4,7 @@ use crate::{
         Configuration, Keyboard, LedColor, MediaCode, Messages, Modifier, MouseAction, MouseButton,
         WellKnownCode,
     },
-    Macropad,
+    mapping::Macropad,
 };
 use anyhow::{anyhow, Result};
 use log::debug;

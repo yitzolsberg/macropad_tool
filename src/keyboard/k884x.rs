@@ -469,7 +469,11 @@ impl Keyboard884x {
 
 #[cfg(test)]
 mod tests {
-    use crate::{consts, keyboard::k884x::Keyboard884x, keyboard::Messages, LedColor};
+    use crate::{
+        consts,
+        keyboard::k884x::Keyboard884x,
+        keyboard::{LedColor, Messages},
+    };
 
     #[test]
     fn ctrl_a_ctrl_s() -> anyhow::Result<()> {
