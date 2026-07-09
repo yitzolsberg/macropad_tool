@@ -85,7 +85,8 @@ fn main() -> Result<()> {
                             device_info.num_keys, device_info.num_encoders
                         );
 
-                        let macropad = Mapping::read(config_file);
+                        let macropad =
+                            Mapping::read(config_file).context("reading configuration file")?;
                         if device_info.num_keys != macropad.device.rows * macropad.device.cols {
                             return Err(anyhow!(
                                 "Number of keys specified in config does not match device"
@@ -121,7 +122,7 @@ fn main() -> Result<()> {
         }
 
         Command::Program { config_file } => {
-            let config = Mapping::read(config_file);
+            let config = Mapping::read(config_file).context("reading configuration file")?;
             let mut keyboard = open_keyboard(&options).context("opening keyboard")?;
             keyboard.program(&config).context("programming macropad")?;
             println!("successfully programmed device");

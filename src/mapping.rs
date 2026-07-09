@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use log::debug;
 use serde::{Deserialize, Serialize};
 
@@ -132,17 +132,11 @@ impl Mapping {
     /// #Arguments
     /// `cfg_file` - configuration file to be read and parsed
     ///
-    pub fn read(cfg_file: &str) -> Macropad {
+    pub fn read(cfg_file: &str) -> Result<Macropad> {
         debug!("configuration file: {cfg_file}");
-        let f = File::open(cfg_file).expect("Failed opening file");
-        let config: Macropad = match from_reader(f) {
-            Ok(x) => x,
-            Err(e) => {
-                println!("Failed to load config: {e}");
-                std::process::exit(1);
-            }
-        };
-        config
+        let f = File::open(cfg_file).context("Failed opening file")?;
+        let config: Macropad = from_reader(f).context("Failed to load config")?;
+        Ok(config)
     }
 
     /// Prints the Macropad to stdout
@@ -169,6 +163,19 @@ impl Mapping {
     /// `pid` - Optional product id to validate against
     ///
     pub fn validate(cfg_file: &str, pid: Option<u16>) -> anyhow::Result<()> {
+        let cfg = Self::read(cfg_file)?;
+        Self::validate_macropad(&cfg, pid)
+    }
+
+    /// Validates an in-memory configuration against the specified product ID. If the
+    /// product ID is not specified, does general validation. Returns `Result<Ok()>` on
+    /// success; Err otherwise
+    ///
+    /// #Arguments
+    /// `cfg` - configuration to validate
+    /// `pid` - Optional product id to validate against
+    ///
+    pub fn validate_macropad(cfg: &Macropad, pid: Option<u16>) -> anyhow::Result<()> {
         // get the maximum number a key can be programmed for
         let mut max_programmable_keys = 0xff;
         if let Some(max) = pid {
@@ -183,9 +190,6 @@ impl Mapping {
         }
         debug!("max_programmable_keys: {max_programmable_keys}");
         debug!("pid: {pid:?}");
-
-        // check layers
-        let cfg = Self::read(cfg_file);
 
         if cfg.layers.is_empty() || cfg.layers.len() > 3 {
             return Err(anyhow!("number of layers must be > 0 and < 4"));
@@ -409,12 +413,12 @@ mod tests {
 
     #[test]
     fn mapping_read() {
-        Mapping::read("./mapping.ron");
+        Mapping::read("./mapping.ron").unwrap();
     }
 
     #[test]
     fn mapping_print() {
-        Mapping::print(Mapping::read("./mapping.ron"));
+        Mapping::print(Mapping::read("./mapping.ron").unwrap());
     }
 
     #[test]
