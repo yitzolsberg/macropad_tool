@@ -139,18 +139,38 @@ impl Mapping {
         Ok(config)
     }
 
+    /// Serializes a Macropad to a pretty-printed RON string
+    ///
+    /// #Arguments
+    /// `config` - macropad to be serialized
+    ///
+    pub fn to_ron_string(config: &Macropad) -> Result<String> {
+        let pretty = PrettyConfig::new()
+            .depth_limit(4)
+            .separate_tuple_members(true)
+            .enumerate_arrays(false);
+
+        to_string_pretty(config, pretty).context("Serialization failed")
+    }
+
+    /// Writes a Macropad to the specified configuration file in RON format
+    ///
+    /// #Arguments
+    /// `cfg_file` - configuration file to write to
+    /// `config` - macropad to be written
+    ///
+    pub fn write(cfg_file: &str, config: &Macropad) -> Result<()> {
+        let s = Self::to_ron_string(config)?;
+        std::fs::write(cfg_file, s).context("Failed writing file")
+    }
+
     /// Prints the Macropad to stdout
     ///
     /// #Arguments
     /// `config` - macropad to be printed
     ///
     pub fn print(config: Macropad) {
-        let pretty = PrettyConfig::new()
-            .depth_limit(4)
-            .separate_tuple_members(true)
-            .enumerate_arrays(false);
-
-        let s = to_string_pretty(&config, pretty).expect("Serialization failed");
+        let s = Self::to_ron_string(&config).expect("Serialization failed");
         println!("{s}");
     }
 
@@ -419,6 +439,23 @@ mod tests {
     #[test]
     fn mapping_print() {
         Mapping::print(Mapping::read("./mapping.ron").unwrap());
+    }
+
+    #[test]
+    fn mapping_write_round_trip() -> anyhow::Result<()> {
+        let original = Mapping::read("./mapping.ron")?;
+        let tmp = std::env::temp_dir().join("macropad_tool_mapping_write_round_trip.ron");
+        let path = tmp.to_str().unwrap();
+
+        Mapping::write(path, &original)?;
+        let read_back = Mapping::read(path)?;
+        std::fs::remove_file(path).ok();
+
+        assert_eq!(
+            Mapping::to_ron_string(&original)?,
+            Mapping::to_ron_string(&read_back)?
+        );
+        Ok(())
     }
 
     #[test]
